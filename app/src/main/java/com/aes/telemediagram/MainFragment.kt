@@ -57,13 +57,17 @@ class MainFragment : BrowseSupportFragment() {
         Log.i(TAG, "onCreate")
         super.onActivityCreated(savedInstanceState)
 
+
+        val telegramTdLibClient =  TelegramTdLibClient()
+        telegramTdLibClient.getLatestMessages();
         prepareBackgroundManager()
 
         setupUIElements()
 
-        loadRows()
+        //loadRows()
 
         setupEventListeners()
+
     }
 
     override fun onDestroy() {
