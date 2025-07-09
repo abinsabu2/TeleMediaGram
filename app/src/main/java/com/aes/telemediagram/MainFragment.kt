@@ -104,19 +104,7 @@ class MainFragment : BrowseSupportFragment() {
        // Telegram messages row
         val telegramHeader = HeaderItem(100, "Telegram Messages")
         val telegramAdapter = ArrayObjectAdapter(GridItemPresenter())
-        val telegramBotClient = TelegramBotClient("7342089655:AAGOnA0VTg6m0WKEN8fg89t46tf6KaR-tcQ") // REPLACE this
-        lifecycleScope.launch {
-            telegramBotClient.getMessagesFlow(5000L)
-                .collect { message ->
-                    rowsAdapter.clear()
-                    val listRowAdapterDyn = ArrayObjectAdapter(cardPresenter)
-                    val listdyn = MovieList.setupDynMovies(message);
-                    for (movie in listdyn) {
-                        listRowAdapterDyn.add(movie)
-                    }
-                    rowsAdapter.add(ListRow(telegramHeader, listRowAdapterDyn))
-                }
-        }
+        val telegramBotClient = TelegramTdLibClient() // REPLACE this
 
         rowsAdapter.add(ListRow(telegramHeader, telegramAdapter))
 
