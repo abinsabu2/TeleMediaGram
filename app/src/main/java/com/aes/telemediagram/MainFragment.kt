@@ -56,10 +56,6 @@ class MainFragment : BrowseSupportFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         Log.i(TAG, "onCreate")
         super.onActivityCreated(savedInstanceState)
-
-
-        val telegramTdLibClient =  TelegramTdLibClient()
-        telegramTdLibClient.getLatestMessages();
         prepareBackgroundManager()
 
         setupUIElements()
@@ -104,7 +100,6 @@ class MainFragment : BrowseSupportFragment() {
        // Telegram messages row
         val telegramHeader = HeaderItem(100, "Telegram Messages")
         val telegramAdapter = ArrayObjectAdapter(GridItemPresenter())
-        val telegramBotClient = TelegramTdLibClient() // REPLACE this
 
         rowsAdapter.add(ListRow(telegramHeader, telegramAdapter))
 
