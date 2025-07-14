@@ -30,8 +30,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".VerifyCodeActivity" />
         <activity
             android:name=".MainActivity"
             android:banner="@drawable/app_icon_your_company"

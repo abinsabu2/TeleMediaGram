@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.Message
 import androidx.leanback.app.BackgroundManager
 import androidx.leanback.app.BrowseSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
@@ -31,13 +30,10 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
 
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
-import kotlinx.coroutines.launch
-import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Loads a grid of cards with movies to browse.
@@ -51,19 +47,17 @@ class MainFragment : BrowseSupportFragment() {
     private var mBackgroundTimer: Timer? = null
     private var mBackgroundUri: String? = null
 
-    private val messageList = CopyOnWriteArrayList<Message>()
-
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         Log.i(TAG, "onCreate")
         super.onActivityCreated(savedInstanceState)
+
         prepareBackgroundManager()
 
         setupUIElements()
 
-        //loadRows()
+        loadRows()
 
         setupEventListeners()
-
     }
 
     override fun onDestroy() {
@@ -94,28 +88,36 @@ class MainFragment : BrowseSupportFragment() {
     }
 
     private fun loadRows() {
+
+        val list = MovieList.list
+
         val rowsAdapter = ArrayObjectAdapter(ListRowPresenter())
         val cardPresenter = CardPresenter()
 
-       // Telegram messages row
-        val telegramHeader = HeaderItem(100, "Telegram Messages")
-        val telegramAdapter = ArrayObjectAdapter(GridItemPresenter())
+        for (i in 0 until NUM_ROWS) {
+            if (i != 0) {
+                Collections.shuffle(list)
+            }
+            val listRowAdapter = ArrayObjectAdapter(cardPresenter)
+            for (j in 0 until NUM_COLS) {
+                listRowAdapter.add(list[j % 5])
+            }
+            val header = HeaderItem(i.toLong(), MovieList.MOVIE_CATEGORY[i])
+            rowsAdapter.add(ListRow(header, listRowAdapter))
+        }
 
-        rowsAdapter.add(ListRow(telegramHeader, telegramAdapter))
+        val gridHeader = HeaderItem(NUM_ROWS.toLong(), "PREFERENCES")
+
+        val mGridPresenter = GridItemPresenter()
+        val gridRowAdapter = ArrayObjectAdapter(mGridPresenter)
+        gridRowAdapter.add(resources.getString(R.string.grid_view))
+        gridRowAdapter.add(getString(R.string.error_fragment))
+        gridRowAdapter.add(resources.getString(R.string.personal_settings))
+        rowsAdapter.add(ListRow(gridHeader, gridRowAdapter))
 
         adapter = rowsAdapter
     }
 
-    private fun CopyOnWriteArrayList<Message>.add(e: Result<List<String>>) {
-        Log.d("StoredMessagesssss", "Add: ${e.getOrNull()}")
-    }
-
-
-    private fun getLastMessages(count: Int): List<Message> {
-        return synchronized(messageList) {
-            messageList.takeLast(count) // Get the last N messages
-        }
-    }
     private fun setupEventListeners() {
         setOnSearchClickedListener {
             Toast.makeText(activity!!, "Implement your own in-app search", Toast.LENGTH_LONG)
