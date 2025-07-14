@@ -1,58 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/statusText"
-        android:text="Status"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:padding="8dp"/>
+        android:text="Status"
+        android:textSize="16sp"/>
 
     <EditText
         android:id="@+id/phoneEdit"
-        android:hint="Enter phone number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:hint="Phone Number"
         android:inputType="phone"
-        android:visibility="gone"
-        android:padding="8dp"/>
+        android:layout_below="@id/statusText"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/loginButton"
-        android:text="Send Phone Number"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:padding="8dp"/>
+        android:text="Login"
+        android:layout_below="@id/phoneEdit"
+        android:visibility="gone"/>
 
     <EditText
         android:id="@+id/codeEdit"
-        android:hint="Enter authentication code"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:hint="Authentication Code"
         android:inputType="number"
-        android:visibility="gone"
-        android:padding="8dp"/>
+        android:layout_below="@id/loginButton"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/codeButton"
-        android:text="Send Code"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:padding="8dp"/>
+        android:text="Submit Code"
+        android:layout_below="@id/codeEdit"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/backToChatsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back to Chats"
+        android:layout_below="@id/codeButton"
+        android:visibility="gone"/>
 
     <ListView
         android:id="@+id/chatListView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:dividerHeight="1dp"/>
+        android:layout_height="wrap_content"
+        android:layout_below="@id/backToChatsButton"/>
 
-</LinearLayout>
+    <ListView
+        android:id="@+id/messagesListView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/backToChatsButton"
+        android:visibility="gone"/>
+
+</RelativeLayout>

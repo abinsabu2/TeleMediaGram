@@ -1,5 +1,8 @@
 package com.aes.telemediagram
 
+import android.app.AlertDialog
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -22,6 +25,12 @@ class LoginActivity : FragmentActivity() {
     private lateinit var chatAdapter: ArrayAdapter<String>
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private lateinit var backToChatsButton: Button
+
+    private lateinit var messagesListView: ListView
+    private val messagesList = mutableListOf<String>()
+    private lateinit var messagesAdapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,6 +78,17 @@ class LoginActivity : FragmentActivity() {
             val chatId = chatIdList[position]
             loadMessages(chatId)
         }
+
+        messagesListView = findViewById(R.id.messagesListView)
+        messagesAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, messagesList)
+        messagesListView.adapter = messagesAdapter
+
+        backToChatsButton = findViewById(R.id.backToChatsButton)
+        backToChatsButton.setOnClickListener {
+            messagesListView.visibility = View.GONE
+            chatListView.visibility = View.VISIBLE
+            backToChatsButton.visibility = View.GONE
+        }
     }
 
     private fun onResult(obj: TdApi.Object?) {
@@ -78,6 +98,8 @@ class LoginActivity : FragmentActivity() {
             is TdApi.UpdateAuthorizationState -> onAuthorizationStateUpdated(obj.authorizationState)
 
             is TdApi.AuthorizationStateReady -> updateStatus("Authorization completed")
+
+            is TdApi.UpdateFile -> handleFileUpdate(obj)
 
             else -> Log.d("TDLib", "Result: $obj")
         }
@@ -121,28 +143,89 @@ class LoginActivity : FragmentActivity() {
     private fun loadMessages(chatId: Long) {
         scope.launch {
             val messages = TelegramClientManager.loadMessagesForChat(chatId)
-            val messageContents = messages.map { parseMessageContent(it.content) }
-            showMessagesInDialog(messageContents)
+            val mediaMessages = messages.map { parseMessageContent(it.content) }
+
+            runOnUiThread {
+                messagesList.clear()
+                mediaMessages.forEach {
+                    messagesList.add(it.description + if (it.localPath != null) " [Stream]" else "")
+                }
+                messagesAdapter.notifyDataSetChanged()
+
+                chatListView.visibility = View.GONE
+                messagesListView.visibility = View.VISIBLE
+                backToChatsButton.visibility = View.VISIBLE
+
+                messagesListView.setOnItemClickListener { _, _, position, _ ->
+                    val media = mediaMessages[position]
+                    if (media.localPath != null) {
+                        playMediaFile(media.localPath)
+                    } else {
+                        showDownloadPrompt(media)
+                    }
+                }
+            }
+        }
+    }
+    private fun showDownloadPrompt(media: MediaMessage) {
+        AlertDialog.Builder(this)
+            .setTitle("Download Required")
+            .setMessage("This file is not downloaded yet. Do you want to download and stream it?")
+            .setPositiveButton("Yes") { _, _ ->
+                downloadAndPlayFile(media.fileId) // assuming MediaMessage holds fileId
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    private fun playMediaFile(path: String) {
+        val fileUri = Uri.parse("file://$path")
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(fileUri, getMimeType(path))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        val chooser = Intent.createChooser(intent, "Open with")
+        startActivity(chooser)
+    }
+
+    private fun getMimeType(path: String): String {
+        return when {
+            path.endsWith(".mp4", ignoreCase = true) -> "video/mp4"
+            path.endsWith(".mkv", ignoreCase = true) -> "video/x-matroska"
+            path.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
+            path.endsWith(".mp3", ignoreCase = true) -> "audio/mpeg"
+            else -> "*/*"
+        }
+    }
+    private fun parseMessageContent(content: TdApi.MessageContent): MediaMessage {
+        return when (content) {
+            is TdApi.MessageText -> MediaMessage("Text: ${content.text.text}")
+
+            is TdApi.MessageVideo -> {
+                val file = content.video.video
+                val path = getFileLocalPath(file)
+                MediaMessage("Video: duration=${content.video.duration}s", path, file.id)
+            }
+
+            is TdApi.MessageDocument -> {
+                val file = content.document.document
+                val path = getFileLocalPath(file)
+                MediaMessage("Document: ${content.document.fileName}", path)
+            }
+
+            else -> MediaMessage("Unsupported: ${content.javaClass.simpleName}")
         }
     }
 
-    private fun parseMessageContent(content: TdApi.MessageContent): String {
-        return when (content) {
-            is TdApi.MessageText -> "Text: ${content.text.text}"
-            is TdApi.MessagePhoto -> {
-                val photoInfo = content.photo.sizes.lastOrNull()
-                "Photo: fileId=${photoInfo?.photo?.id}"
-            }
-            is TdApi.MessageVideo -> {
-                val video = content.video
-                "Video: fileId=${video.video.id}, duration=${video.duration}s"
-            }
-            is TdApi.MessageSticker -> "Sticker: emoji=${content.sticker.emoji}, fileId=${content.sticker.sticker.id}"
-            is TdApi.MessageDocument -> "Document: fileId=${content.document.document.id}, name=${content.document.fileName}"
-            is TdApi.MessageAudio -> "Audio: fileId=${content.audio.audio.id}, duration=${content.audio.duration}s"
-            else -> "Unsupported message type: ${content.javaClass.simpleName}"
+    private fun getFileLocalPath(file: TdApi.File): String? {
+        return if (file.local.isDownloadingCompleted && file.local.path != null) {
+            file.local.path
+        } else {
+            downloadAndPlayFile(file.id)
+            null
         }
     }
+
 
     private fun showMessagesInDialog(messages: List<String>) {
         val builder = android.app.AlertDialog.Builder(this)
@@ -166,5 +249,50 @@ class LoginActivity : FragmentActivity() {
         super.onDestroy()
         TelegramClientManager.close()
         scope.cancel()
+    }
+
+    data class MediaMessage(
+        val description: String,
+        val localPath: String? = null,
+        val fileId: Int? = null,
+        val mimeType: String? = null,
+        val width: Int? = null,
+        val height: Int? = null,
+        val duration: Int? = null,
+        val size: Int? = null,
+        val thumbnailPath: String? = null,
+        val thumbnailMimeType: String? = null,
+        val thumbnailWidth: Int? = null,
+        val thumbnailHeight: Int? = null,
+    )
+    private fun downloadAndPlayFile(fileId: Int?) {
+        showLoading(true)
+
+        TelegramClientManager.startFileDownload(fileId)
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        // Show or hide a progress bar/spinner
+        // Example:
+        // progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+
+    private fun handleFileUpdate(update: TdApi.UpdateFile) {
+        val file = update.file
+        val downloaded = file.local.downloadedSize
+        val expected = file.expectedSize
+        val progress = if (expected > 0) (downloaded * 100 / expected).toInt() else 0
+
+        runOnUiThread {
+            updateStatus("Downloading file: $progress%")
+            // Optionally update a progress bar here
+        }
+
+        if (file.local.isDownloadingCompleted) {
+            runOnUiThread {
+                updateStatus("Download complete: ${file.local.path}")
+                playMediaFile(file.local.path)
+            }
+        }
     }
 }

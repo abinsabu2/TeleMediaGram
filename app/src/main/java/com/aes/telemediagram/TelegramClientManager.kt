@@ -77,8 +77,21 @@ object TelegramClientManager {
         return@withContext emptyList()
     }
 
+    fun downloadFile(fileId: Int, priority: Int = 1) {
+        client?.send(TdApi.DownloadFile(fileId, priority, 0, 0, true)) {
+            Log.d("TDLib", "Download started for fileId=$fileId: $it")
+        }
+    }
+    fun startFileDownload(fileId: Int?) {
+        client?.send(TdApi.DownloadFile(fileId?.toInt() ?: 0, 1, 0, 0, false)) {
+            Log.d("TDLib", "Download started for fileId=$fileId")
+        }
+    }
+
     fun close() {
         client?.send(TdApi.Close(), null)
         client = null
     }
+
+
 }
