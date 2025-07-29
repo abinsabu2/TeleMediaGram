@@ -1,6 +1,7 @@
 package com.aes.telemediagram
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -8,8 +9,10 @@ import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.fragment.app.FragmentActivity
+import com.aes.telemediagram.TelegramClientManager.client
 import kotlinx.coroutines.*
 import org.drinkless.tdlib.TdApi
+import java.io.File
 
 class LoginActivity : FragmentActivity() {
 
@@ -28,9 +31,13 @@ class LoginActivity : FragmentActivity() {
 
     private lateinit var backToChatsButton: Button
 
+    private lateinit var clearMedia: Button
+
     private lateinit var messagesListView: ListView
     private val messagesList = mutableListOf<String>()
     private lateinit var messagesAdapter: ArrayAdapter<String>
+
+    private var isVLCPlaying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,12 +50,15 @@ class LoginActivity : FragmentActivity() {
         loginButton = findViewById(R.id.loginButton)
         codeButton = findViewById(R.id.codeButton)
         chatListView = findViewById(R.id.chatListView)
+        clearMedia = findViewById(R.id.btnDeleteMedia)
+
+        clearMedia.visibility = View.VISIBLE
 
         chatAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, chatList)
         chatListView.adapter = chatAdapter
 
         // Initialize Telegram Client
-        TelegramClientManager.initialize(this, ::onResult)
+        TelegramClientManager.initialize(::onResult)
 
         loginButton.setOnClickListener {
             val phone = phoneEdit.text.toString().trim()
@@ -72,6 +82,11 @@ class LoginActivity : FragmentActivity() {
             } else {
                 showToast("Enter code")
             }
+        }
+
+
+        clearMedia.setOnClickListener {
+            deleteTdLibMediaFolders(this@LoginActivity)
         }
 
         chatListView.setOnItemClickListener { _, _, position, _ ->
@@ -122,7 +137,11 @@ class LoginActivity : FragmentActivity() {
                 }
             }
             is TdApi.AuthorizationStateReady -> {
+                TelegramClientManager.client = client
                 updateStatus("Authorization successful, loading groups...")
+                /*val intent = Intent(this@LoginActivity, MainActivity::class.java)
+                startActivity(intent)
+                finish()*/
                 loadGroups()
             }
             else -> Log.d("TDLib", "Unhandled Auth State: $state")
@@ -156,13 +175,26 @@ class LoginActivity : FragmentActivity() {
                 messagesListView.visibility = View.VISIBLE
                 backToChatsButton.visibility = View.VISIBLE
 
+                // Get current layout parameters
+                val params = clearMedia.layoutParams as RelativeLayout.LayoutParams
+
+                // Clear any existing relative rules
+                params.addRule(RelativeLayout.BELOW, 0)
+                params.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
+                params.addRule(RelativeLayout.RIGHT_OF, 0)
+
+                // Set rule to position button2 to the right of button1
+                params.addRule(RelativeLayout.RIGHT_OF, backToChatsButton.id)
+                params.leftMargin = 16 // optional spacing between buttons (in px)
+
+                // Apply the updated parameters
+                clearMedia.layoutParams = params
+
+
+
                 messagesListView.setOnItemClickListener { _, _, position, _ ->
                     val media = mediaMessages[position]
-                    if (media.localPath != null) {
-                        playMediaFile(media.localPath)
-                    } else {
-                        showDownloadPrompt(media)
-                    }
+                     showDownloadPrompt(media)
                 }
             }
         }
@@ -203,26 +235,17 @@ class LoginActivity : FragmentActivity() {
 
             is TdApi.MessageVideo -> {
                 val file = content.video.video
-                val path = getFileLocalPath(file)
-                MediaMessage("Video: duration=${content.video.duration}s", path, file.id)
+                val path = ""
+                MediaMessage("Video: [${file.id}] - [${content.video.fileName}]", path, file.id)
             }
 
             is TdApi.MessageDocument -> {
                 val file = content.document.document
-                val path = getFileLocalPath(file)
-                MediaMessage("Document: ${content.document.fileName}", path)
+                val path = ""
+                MediaMessage("Document: [${file.id}] - [${content.document.fileName}]", path,file.id)
             }
 
-            else -> MediaMessage("Unsupported: ${content.javaClass.simpleName}")
-        }
-    }
-
-    private fun getFileLocalPath(file: TdApi.File): String? {
-        return if (file.local.isDownloadingCompleted && file.local.path != null) {
-            file.local.path
-        } else {
-            downloadAndPlayFile(file.id)
-            null
+            else -> MediaMessage("Unsupported chat")
         }
     }
 
@@ -288,11 +311,50 @@ class LoginActivity : FragmentActivity() {
             // Optionally update a progress bar here
         }
 
-        if (file.local.isDownloadingCompleted) {
-            runOnUiThread {
-                updateStatus("Download complete: ${file.local.path}")
-                playMediaFile(file.local.path)
+        val downloadedSize = file.local.downloadedSize
+        val totalSize = file.expectedSize
+
+        if (file.local.path != null && downloadedSize > 300 * 1024 && !isVLCPlaying) {
+            // Once buffer threshold reached, play video
+            playWithVLC(this@LoginActivity, file.local.path)
+            this.isVLCPlaying = true
+        }
+
+
+        }
+
+    fun deleteFolderRecursively(folder: File): Boolean {
+        if (folder.isDirectory) {
+            folder.listFiles()?.forEach { child ->
+                deleteFolderRecursively(child)
             }
         }
+        return folder.delete()
     }
-}
+
+    fun deleteTdLibMediaFolders(context: Context) {
+        val baseDir = File(context.filesDir, "tdlib")
+        val tempDir = File(baseDir, "temp")
+        val documentDir = File(baseDir, "documents")
+
+        var deletedCount = 0
+
+        if (tempDir.exists()) {
+            deleteFolderRecursively(tempDir)
+            deletedCount++
+        }
+
+        if (documentDir.exists()) {
+            deleteFolderRecursively(documentDir)
+            deletedCount++
+        }
+
+        Toast.makeText(
+            context,
+            if (deletedCount > 0) "Deleted $deletedCount folders" else "No folders to delete",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    }
+

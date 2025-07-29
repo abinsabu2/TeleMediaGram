@@ -1,5 +1,6 @@
 package com.aes.telemediagram
 
+import android.app.Application
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
@@ -11,10 +12,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 object TelegramClientManager {
 
-    private var client: Client? = null
+    var client: Client? = null
     private val clientReady = AtomicBoolean(false)
 
-    fun initialize(context: Context, resultHandler: (TdApi.Object?) -> Unit) {
+    fun initialize(resultHandler: (TdApi.Object?) -> Unit) {
         if (client != null) return  // Prevent reinitialization
 
         Client.execute(TdApi.SetLogVerbosityLevel(1))
@@ -27,13 +28,14 @@ object TelegramClientManager {
             deviceModel = "Android"
             systemVersion = "10"
             applicationVersion = "1.0"
-            databaseDirectory = context.filesDir.absolutePath + "/tdlib"
+            databaseDirectory = App.AppContext.filesDir.absolutePath + "/tdlib"
             useMessageDatabase = true
             useSecretChats = false
         }
 
         client?.send(parameters, resultHandler)
     }
+
 
     fun sendPhoneNumber(phone: String, callback: (TdApi.Object?) -> Unit) {
         client?.send(TdApi.SetAuthenticationPhoneNumber(phone, null), callback)
@@ -51,7 +53,7 @@ object TelegramClientManager {
                     client?.send(TdApi.GetChat(chatId)) { chatObj ->
                         if (chatObj is TdApi.Chat) {
                             val chatType = chatObj.type
-                            if (chatType is TdApi.ChatTypeSupergroup || chatType is TdApi.ChatTypeBasicGroup) {
+                            if (chatType is TdApi.ChatTypePrivate || chatType is TdApi.ChatTypeSupergroup || chatType is TdApi.ChatTypeBasicGroup) {
                                 callback(chatObj)
                             }
                         }
@@ -63,7 +65,7 @@ object TelegramClientManager {
         }
     }
 
-    suspend fun loadMessagesForChat(chatId: Long, limit: Int = 20): List<TdApi.Message> = withContext(Dispatchers.IO) {
+    suspend fun loadMessagesForChat(chatId: Long, limit: Int = 200000): List<TdApi.Message> = withContext(Dispatchers.IO) {
         val response = CompletableDeferred<TdApi.Object?>()
 
         client?.send(TdApi.GetChatHistory(chatId, 0, 0, limit, false)) {
@@ -88,10 +90,21 @@ object TelegramClientManager {
         }
     }
 
+    
     fun close() {
         client?.send(TdApi.Close(), null)
         client = null
     }
 
 
+}
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        AppContext = applicationContext
+    }
+
+    companion object {
+        lateinit var AppContext: Context
+    }
 }

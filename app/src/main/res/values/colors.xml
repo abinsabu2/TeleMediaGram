@@ -1,11 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background_gradient_start">#000000</color>
-    <color name="background_gradient_end">#DDDDDD</color>
-    <color name="fastlane_background">#0096a6</color>
-    <color name="search_opaque">#ffaa3f</color>
-    <color name="selected_background">#ffaa3f</color>
-    <color name="default_background">#3d3d3d</color>
-    <color name="purple_500">#6200EE</color>
-    <color name="purple_700">#3700B3</color>
-    <color name="teal_200">#03DAC5</color>
+    <!-- Primary colors -->
+    <color name="primary_text">#FFFFFF</color>
+    <color name="secondary_text">#B0B0B0</color>
+    <color name="accent_color">#2196F3</color>
+    
+    <!-- Chat item colors -->
+    <color name="avatar_background">#424242</color>
+    <color name="avatar_border">#616161</color>
+    <color name="unread_badge_color">#FF5722</color>
+    
+    <!-- Card colors -->
+    <color name="card_background">#2C2C2C</color>
+    <color name="card_focused">#3C3C3C</color>
 </resources>

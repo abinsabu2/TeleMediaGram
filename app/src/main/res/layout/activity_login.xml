@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/relativelogin"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#595050"
     android:padding="16dp">
 
     <TextView
@@ -9,61 +11,80 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Status"
-        android:textSize="16sp"/>
+        android:textSize="16sp" />
 
     <EditText
         android:id="@+id/phoneEdit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@id/statusText"
         android:hint="Phone Number"
         android:inputType="phone"
-        android:layout_below="@id/statusText"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <Button
         android:id="@+id/loginButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Login"
         android:layout_below="@id/phoneEdit"
-        android:visibility="gone"/>
+        android:text="Login"
+        android:visibility="gone" />
 
     <EditText
         android:id="@+id/codeEdit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@id/loginButton"
         android:hint="Authentication Code"
         android:inputType="number"
-        android:layout_below="@id/loginButton"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <Button
         android:id="@+id/codeButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Submit Code"
         android:layout_below="@id/codeEdit"
-        android:visibility="gone"/>
+        android:text="Submit Code"
+        android:visibility="gone" />
 
     <Button
         android:id="@+id/backToChatsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Back to Chats"
         android:layout_below="@id/codeButton"
-        android:visibility="gone"/>
+        android:text="Back to Chats"
+        android:visibility="gone" />
 
     <ListView
         android:id="@+id/chatListView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/backToChatsButton"/>
+        android:layout_width="328dp"
+        android:layout_height="651dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginEnd="50pt" />
 
     <ListView
         android:id="@+id/messagesListView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/backToChatsButton"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:max="100"
+        android:progress="0"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/btnDeleteMedia"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_below="@+id/backToChatsButton"
+        android:text="Delete Telegram Media"
+        android:visibility="gone" />
 </RelativeLayout>

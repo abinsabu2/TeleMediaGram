@@ -82,9 +82,9 @@ class MainFragment : BrowseSupportFragment() {
         isHeadersTransitionOnBackEnabled = true
 
         // set fastLane (or headers) background color
-        brandColor = ContextCompat.getColor(activity!!, R.color.fastlane_background)
+     //   brandColor = ContextCompat.getColor(activity!!, R.color.fastlane_background)
         // set search icon color
-        searchAffordanceColor = ContextCompat.getColor(activity!!, R.color.search_opaque)
+        //searchAffordanceColor = ContextCompat.getColor(activity!!, R.color.search_opaque)
     }
 
     private fun loadRows() {
