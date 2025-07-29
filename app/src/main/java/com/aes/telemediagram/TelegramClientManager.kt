@@ -45,7 +45,7 @@ object TelegramClientManager {
         client?.send(TdApi.CheckAuthenticationCode(code), callback)
     }
 
-    fun loadAllGroups(limit: Int = 1000, callback: (TdApi.Chat) -> Unit) {
+    fun loadAllGroups(limit: Int = 100000, callback: (TdApi.Chat) -> Unit) {
         client?.send(TdApi.GetChats(TdApi.ChatListMain(), limit)) { result ->
             if (result is TdApi.Chats) {
                 Log.d("TDLib", "Total chat IDs: ${result.chatIds.size}")
@@ -65,7 +65,7 @@ object TelegramClientManager {
         }
     }
 
-    suspend fun loadMessagesForChat(chatId: Long, limit: Int = 200000): List<TdApi.Message> = withContext(Dispatchers.IO) {
+    suspend fun loadMessagesForChat(chatId: Long, limit: Int = 2000000): List<TdApi.Message> = withContext(Dispatchers.IO) {
         val response = CompletableDeferred<TdApi.Object?>()
 
         client?.send(TdApi.GetChatHistory(chatId, 0, 0, limit, false)) {

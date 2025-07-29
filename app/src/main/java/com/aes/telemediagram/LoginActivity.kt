@@ -167,7 +167,9 @@ class LoginActivity : FragmentActivity() {
             runOnUiThread {
                 messagesList.clear()
                 mediaMessages.forEach {
-                    messagesList.add(it.description + if (it.localPath != null) " [Stream]" else "")
+                    if (it.description != "uc") {
+                        messagesList.add(it.description + if (it.localPath != null) "" else "")
+                    }
                 }
                 messagesAdapter.notifyDataSetChanged()
 
@@ -231,21 +233,21 @@ class LoginActivity : FragmentActivity() {
     }
     private fun parseMessageContent(content: TdApi.MessageContent): MediaMessage {
         return when (content) {
-            is TdApi.MessageText -> MediaMessage("Text: ${content.text.text}")
-
             is TdApi.MessageVideo -> {
                 val file = content.video.video
                 val path = ""
-                MediaMessage("Video: [${file.id}] - [${content.video.fileName}]", path, file.id)
+                val fileSize = file.size.toFloat() / (1024 * 1024)
+                MediaMessage("Video: [${file.id}] - [${fileSize} MB]- [${content.video.fileName}]", path, file.id)
             }
 
             is TdApi.MessageDocument -> {
                 val file = content.document.document
                 val path = ""
-                MediaMessage("Document: [${file.id}] - [${content.document.fileName}]", path,file.id)
+                val fileSize = file.size.toFloat() / (1024 * 1024)
+                MediaMessage("Document: [${file.id}] - [${fileSize} MB] - [${content.document.fileName}]", path,file.id)
             }
 
-            else -> MediaMessage("Unsupported chat")
+            else -> MediaMessage("uc")
         }
     }
 
@@ -305,19 +307,23 @@ class LoginActivity : FragmentActivity() {
         val downloaded = file.local.downloadedSize
         val expected = file.expectedSize
         val progress = if (expected > 0) (downloaded * 100 / expected).toInt() else 0
+        val downloadedSize = file.local.downloadedSize.toFloat() / (1024 * 1024)
+        val downloadedSizeOrginal = file.local.downloadedSize
+        val totalSize = file.expectedSize.toFloat() / (1024 * 1024)
+        val fileSize = if (totalSize > 0) "$downloadedSize/$totalSize" else ""
+        val fileSizeProgress = if (totalSize > 0) "$progress%" else ""
 
         runOnUiThread {
-            updateStatus("Downloading file: $progress%")
+            updateStatus("Downloading file: $progress% ($downloadedSize/$totalSize MB)...")
             // Optionally update a progress bar here
         }
 
-        val downloadedSize = file.local.downloadedSize
-        val totalSize = file.expectedSize
 
-        if (file.local.path != null && downloadedSize > 300 * 1024 && !isVLCPlaying) {
+
+        if (file.local.path != null && downloadedSize > 10 && !isVLCPlaying) {
             // Once buffer threshold reached, play video
-            playWithVLC(this@LoginActivity, file.local.path)
             this.isVLCPlaying = true
+            playWithVLC(this@LoginActivity, file.local.path)
         }
 
 
