@@ -7,7 +7,7 @@ import android.net.Uri
 import android.widget.Toast
 import java.io.File
 
-fun playWithVLC(context: Context, filePath: String) {
+fun playWithVLC(context: Context, filePath: String?) {
     val file = File(filePath)
     if (!file.exists()) {
         Toast.makeText(context, "File does not exist", Toast.LENGTH_SHORT).show()

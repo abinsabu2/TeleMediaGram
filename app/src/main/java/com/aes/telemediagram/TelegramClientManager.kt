@@ -90,6 +90,15 @@ object TelegramClientManager {
         }
     }
 
+    fun cancelDownload(fileIds: MutableSet<Int>) {
+
+        for (fileId in fileIds) {
+            client?.send(TdApi.CancelDownloadFile(fileId, false)) {
+                Log.d("TDLib", "Cancelled download: $fileId")
+            }
+        }
+
+    }
     
     fun close() {
         client?.send(TdApi.Close(), null)

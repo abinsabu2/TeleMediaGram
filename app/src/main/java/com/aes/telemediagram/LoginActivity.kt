@@ -1,9 +1,9 @@
 package com.aes.telemediagram
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -23,6 +23,10 @@ class LoginActivity : FragmentActivity() {
     private lateinit var codeButton: Button
     private lateinit var chatListView: ListView
 
+    private lateinit var cancelButton: Button
+
+    private lateinit var resumeButton: Button
+
     private val chatList = mutableListOf<String>()
     private val chatIdList = mutableListOf<Long>()
     private lateinit var chatAdapter: ArrayAdapter<String>
@@ -38,6 +42,8 @@ class LoginActivity : FragmentActivity() {
     private lateinit var messagesAdapter: ArrayAdapter<String>
 
     private var isVLCPlaying = false
+    private var currentDownload: DownloadingFileInfo? = null
+    val activeDownloads = mutableSetOf<Int>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +57,32 @@ class LoginActivity : FragmentActivity() {
         codeButton = findViewById(R.id.codeButton)
         chatListView = findViewById(R.id.chatListView)
         clearMedia = findViewById(R.id.btnDeleteMedia)
+
+        cancelButton = findViewById(R.id.btnCancelDownload)
+
+        resumeButton = findViewById(R.id.btnResume)
+
+        cancelButton.setOnClickListener {
+            showToast("File Download Cancellation Initiated...")
+            TelegramClientManager.cancelDownload(activeDownloads)
+            isVLCPlaying = false
+            activeDownloads.clear()
+            stopVLCPlayback()
+            deleteTdLibMediaFolders(this@LoginActivity)
+            showToast("Download Cancelled")
+            Log.d("TDLib", "Download Stoped")
+        }
+
+        resumeButton.setOnClickListener {
+            if(currentDownload != null && currentDownload!!.downloadedSize > 500) {
+                stopVLCPlayback()
+                this.isVLCPlaying = true
+                playWithVLC(this@LoginActivity, currentDownload!!.localPath)
+
+            }else{
+                showToast("Not Enough Data to Resume Min 500 MB required...")
+            }
+        }
 
         clearMedia.visibility = View.VISIBLE
 
@@ -139,9 +171,6 @@ class LoginActivity : FragmentActivity() {
             is TdApi.AuthorizationStateReady -> {
                 TelegramClientManager.client = client
                 updateStatus("Authorization successful, loading groups...")
-                /*val intent = Intent(this@LoginActivity, MainActivity::class.java)
-                startActivity(intent)
-                finish()*/
                 loadGroups()
             }
             else -> Log.d("TDLib", "Unhandled Auth State: $state")
@@ -151,6 +180,7 @@ class LoginActivity : FragmentActivity() {
     private fun loadGroups() {
         TelegramClientManager.loadAllGroups { chat ->
             runOnUiThread {
+                updateStatus("Chats")
                 chatList.add(chat.title)
                 chatIdList.add(chat.id)
                 chatAdapter.notifyDataSetChanged()
@@ -167,9 +197,7 @@ class LoginActivity : FragmentActivity() {
             runOnUiThread {
                 messagesList.clear()
                 mediaMessages.forEach {
-                    if (it.description != "uc") {
-                        messagesList.add(it.description + if (it.localPath != null) "" else "")
-                    }
+                    messagesList.add(it.description + if (it.localPath != null) "" else "")
                 }
                 messagesAdapter.notifyDataSetChanged()
 
@@ -193,6 +221,35 @@ class LoginActivity : FragmentActivity() {
                 clearMedia.layoutParams = params
 
 
+                // Get current layout parameters
+                val cancelParam = cancelButton.layoutParams as RelativeLayout.LayoutParams
+
+                // Clear any existing relative rules
+                cancelParam.addRule(RelativeLayout.BELOW, 0)
+                cancelParam.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
+                cancelParam.addRule(RelativeLayout.RIGHT_OF, 0)
+                cancelParam.addRule(RelativeLayout.RIGHT_OF, clearMedia.id)
+                cancelParam.leftMargin = 16 // optional spacing between buttons (in px)
+
+                // Apply the updated parameters
+                cancelParam.topMargin = dpToPx(20, this@LoginActivity)
+                cancelButton.layoutParams = cancelParam
+
+
+
+                val resumeParam = resumeButton.layoutParams as RelativeLayout.LayoutParams
+
+                // Clear any existing relative rules
+                resumeParam.addRule(RelativeLayout.BELOW, 0)
+                resumeParam.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
+                resumeParam.addRule(RelativeLayout.RIGHT_OF, 0)
+                resumeParam.addRule(RelativeLayout.RIGHT_OF, cancelButton.id)
+                resumeParam.leftMargin = 16 // optional spacing between buttons (in px)
+
+                // Apply the updated parameters
+                resumeParam.topMargin = dpToPx(20, this@LoginActivity)
+                resumeButton.layoutParams = resumeParam
+
 
                 messagesListView.setOnItemClickListener { _, _, position, _ ->
                     val media = mediaMessages[position]
@@ -201,7 +258,16 @@ class LoginActivity : FragmentActivity() {
             }
         }
     }
+
+    fun dpToPx(dp: Int, context: Context): Int {
+        return (dp * context.resources.displayMetrics.density).toInt()
+    }
+
     private fun showDownloadPrompt(media: MediaMessage) {
+
+        if (!media.isMedia) {
+            return
+        }
         AlertDialog.Builder(this)
             .setTitle("Download Required")
             .setMessage("This file is not downloaded yet. Do you want to download and stream it?")
@@ -211,58 +277,32 @@ class LoginActivity : FragmentActivity() {
             .setNegativeButton("Cancel", null)
             .show()
     }
-    private fun playMediaFile(path: String) {
-        val fileUri = Uri.parse("file://$path")
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(fileUri, getMimeType(path))
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
 
-        val chooser = Intent.createChooser(intent, "Open with")
-        startActivity(chooser)
-    }
-
-    private fun getMimeType(path: String): String {
-        return when {
-            path.endsWith(".mp4", ignoreCase = true) -> "video/mp4"
-            path.endsWith(".mkv", ignoreCase = true) -> "video/x-matroska"
-            path.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
-            path.endsWith(".mp3", ignoreCase = true) -> "audio/mpeg"
-            else -> "*/*"
-        }
-    }
     private fun parseMessageContent(content: TdApi.MessageContent): MediaMessage {
         return when (content) {
             is TdApi.MessageVideo -> {
                 val file = content.video.video
                 val path = ""
                 val fileSize = file.size.toFloat() / (1024 * 1024)
-                MediaMessage("Video: [${file.id}] - [${fileSize} MB]- [${content.video.fileName}]", path, file.id)
+                MediaMessage(true,"Video: [${file.id}] - [${fileSize} MB]- [${content.video.fileName}]", path, file.id)
             }
 
             is TdApi.MessageDocument -> {
                 val file = content.document.document
                 val path = ""
                 val fileSize = file.size.toFloat() / (1024 * 1024)
-                MediaMessage("Document: [${file.id}] - [${fileSize} MB] - [${content.document.fileName}]", path,file.id)
+                MediaMessage(true,"Document: [${file.id}] - [${fileSize} MB] - [${content.document.fileName}]", path,file.id)
             }
 
-            else -> MediaMessage("uc")
+            else -> MediaMessage(false,"No Video or Document Found in this chat!")
         }
     }
 
 
-    private fun showMessagesInDialog(messages: List<String>) {
-        val builder = android.app.AlertDialog.Builder(this)
-            .setTitle("Group Messages")
-            .setMessage(if (messages.isNotEmpty()) messages.joinToString("\n\n") else "No messages found.")
-            .setPositiveButton("OK", null)
-        builder.show()
-    }
-
+    @SuppressLint("SetTextI18n")
     private fun updateStatus(message: String) {
         runOnUiThread {
-            statusText.text = message
+            statusText.text = "Last Message: $message"
         }
     }
 
@@ -277,6 +317,7 @@ class LoginActivity : FragmentActivity() {
     }
 
     data class MediaMessage(
+        val isMedia: Boolean = false,
         val description: String,
         val localPath: String? = null,
         val fileId: Int? = null,
@@ -290,16 +331,21 @@ class LoginActivity : FragmentActivity() {
         val thumbnailWidth: Int? = null,
         val thumbnailHeight: Int? = null,
     )
+
+    data class DownloadingFileInfo(
+        val fileId: Int,
+        val downloadedSize: Float,
+        val totalSize: Float,
+        val progress: Int,
+        val localPath: String? = null,
+    )
+
     private fun downloadAndPlayFile(fileId: Int?) {
-        showLoading(true)
-
+        TelegramClientManager.cancelDownload(activeDownloads)
+        activeDownloads.clear()
+        stopVLCPlayback()
+        activeDownloads.add(fileId?.toInt()?:0)
         TelegramClientManager.startFileDownload(fileId)
-    }
-
-    private fun showLoading(isLoading: Boolean) {
-        // Show or hide a progress bar/spinner
-        // Example:
-        // progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 
     private fun handleFileUpdate(update: TdApi.UpdateFile) {
@@ -308,19 +354,19 @@ class LoginActivity : FragmentActivity() {
         val expected = file.expectedSize
         val progress = if (expected > 0) (downloaded * 100 / expected).toInt() else 0
         val downloadedSize = file.local.downloadedSize.toFloat() / (1024 * 1024)
-        val downloadedSizeOrginal = file.local.downloadedSize
         val totalSize = file.expectedSize.toFloat() / (1024 * 1024)
-        val fileSize = if (totalSize > 0) "$downloadedSize/$totalSize" else ""
-        val fileSizeProgress = if (totalSize > 0) "$progress%" else ""
+        val fileId = file.id
+
+        currentDownload =
+            DownloadingFileInfo(fileId, downloadedSize, totalSize, progress, file.local.path)
 
         runOnUiThread {
-            updateStatus("Downloading file: $progress% ($downloadedSize/$totalSize MB)...")
-            // Optionally update a progress bar here
+            updateStatus("Downloading file [$fileId]: $progress% ($downloadedSize/$totalSize MB)...")
         }
 
 
 
-        if (file.local.path != null && downloadedSize > 10 && !isVLCPlaying) {
+        if (file.local.path != null && downloadedSize > 300 && !isVLCPlaying) {
             // Once buffer threshold reached, play video
             this.isVLCPlaying = true
             playWithVLC(this@LoginActivity, file.local.path)
@@ -329,6 +375,17 @@ class LoginActivity : FragmentActivity() {
 
         }
 
+    fun stopVLCPlayback() {
+        val stopIntent = Intent("org.videolan.vlc.remote.StopPlayback")
+        stopIntent.setPackage("org.videolan.vlc")
+        try {
+            sendBroadcast(stopIntent)
+            Log.d("VLC", "Stop playback broadcast sent")
+        } catch (e: Exception) {
+            Log.e("VLC", "Failed to stop VLC: ${e.message}")
+        }
+        this.isVLCPlaying = false
+    }
     fun deleteFolderRecursively(folder: File): Boolean {
         if (folder.isDirectory) {
             folder.listFiles()?.forEach { child ->
