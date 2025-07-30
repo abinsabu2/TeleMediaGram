@@ -2,5 +2,5 @@
 <paths>
     <files-path
         name="tdlib"
-        path="tdlib/temp/" />
+        path="tdlib/" />
 </paths>

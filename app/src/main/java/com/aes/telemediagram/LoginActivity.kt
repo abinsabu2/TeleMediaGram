@@ -74,7 +74,7 @@ class LoginActivity : FragmentActivity() {
         }
 
         resumeButton.setOnClickListener {
-            if(currentDownload != null && currentDownload!!.downloadedSize > 500) {
+            if(currentDownload != null && currentDownload!!.downloadedSize > 300) {
                 stopVLCPlayback()
                 this.isVLCPlaying = true
                 playWithVLC(this@LoginActivity, currentDownload!!.localPath)
@@ -337,7 +337,7 @@ class LoginActivity : FragmentActivity() {
         val downloadedSize: Float,
         val totalSize: Float,
         val progress: Int,
-        val localPath: String? = null,
+        var localPath: String? = null,
     )
 
     private fun downloadAndPlayFile(fileId: Int?) {
@@ -364,9 +364,13 @@ class LoginActivity : FragmentActivity() {
             updateStatus("Downloading file [$fileId]: $progress% ($downloadedSize/$totalSize MB)...")
         }
 
-
+         if(file.local.isDownloadingCompleted){
+             currentDownload?.localPath = file.local.path
+             Log.d("TDLib", "Download Complete: ${file.local.path}")
+         }
 
         if (file.local.path != null && downloadedSize > 300 && !isVLCPlaying) {
+            resumeButton.visibility = View.VISIBLE
             // Once buffer threshold reached, play video
             this.isVLCPlaying = true
             playWithVLC(this@LoginActivity, file.local.path)

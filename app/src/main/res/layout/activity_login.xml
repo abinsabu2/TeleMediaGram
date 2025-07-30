@@ -93,6 +93,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/btnCancelDownload"
         android:layout_marginTop="138dp"
-        android:text="Resume"
-        android:visibility="visible"/>
+        android:text="Play Now"
+        android:visibility="invisible"/>
 </RelativeLayout>
