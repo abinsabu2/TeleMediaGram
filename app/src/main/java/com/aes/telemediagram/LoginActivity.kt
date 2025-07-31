@@ -84,7 +84,7 @@ class LoginActivity : FragmentActivity() {
             }
         }
 
-        clearMedia.visibility = View.VISIBLE
+
 
         chatAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, chatList)
         chatListView.adapter = chatAdapter
@@ -122,6 +122,8 @@ class LoginActivity : FragmentActivity() {
         }
 
         chatListView.setOnItemClickListener { _, _, position, _ ->
+            clearMedia.visibility = View.VISIBLE
+            cancelButton.visibility = View.VISIBLE
             val chatId = chatIdList[position]
             loadMessages(chatId)
         }
@@ -132,6 +134,8 @@ class LoginActivity : FragmentActivity() {
 
         backToChatsButton = findViewById(R.id.backToChatsButton)
         backToChatsButton.setOnClickListener {
+            clearMedia.visibility = View.GONE
+            cancelButton.visibility = View.GONE
             messagesListView.visibility = View.GONE
             chatListView.visibility = View.VISIBLE
             backToChatsButton.visibility = View.GONE

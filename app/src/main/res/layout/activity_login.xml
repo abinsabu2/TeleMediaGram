@@ -57,10 +57,9 @@
 
     <ListView
         android:id="@+id/chatListView"
-        android:layout_width="328dp"
-        android:layout_height="651dp"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="101dp" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/backToChatsButton" />
 
     <ListView
         android:id="@+id/messagesListView"
@@ -85,6 +84,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/btnDeleteMedia"
         android:layout_marginTop="138dp"
+        android:visibility="gone"
         android:text="Cancel Download" />
 
     <Button
