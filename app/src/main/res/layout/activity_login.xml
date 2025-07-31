@@ -3,7 +3,7 @@
     android:id="@+id/relativelogin"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#595050"
+    android:background="#010815"
     android:padding="16dp">
 
     <TextView
@@ -11,6 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Status"
+        android:layout_centerInParent="true"
         android:textSize="16sp" />
 
     <EditText
