@@ -13,4 +13,7 @@
     <!-- Card colors -->
     <color name="card_background">#2C2C2C</color>
     <color name="card_focused">#3C3C3C</color>
+
+    <color name="purple_500">#2C2C2C</color>
+    <color name="purple_700">#3C3C3C</color>
 </resources>

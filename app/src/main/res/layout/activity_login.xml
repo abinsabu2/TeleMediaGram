@@ -3,7 +3,7 @@
     android:id="@+id/relativelogin"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#010815"
+    android:background="#1960AD"
     android:padding="16dp">
 
     <TextView
@@ -11,89 +11,114 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Status"
-        android:layout_centerInParent="true"
         android:textSize="16sp" />
 
     <EditText
         android:id="@+id/phoneEdit"
-        android:layout_width="match_parent"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/statusText"
+        android:layout_centerHorizontal="true"
         android:hint="Phone Number"
         android:inputType="phone"
         android:visibility="gone" />
 
     <Button
         android:id="@+id/loginButton"
-        android:layout_width="wrap_content"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/phoneEdit"
+        android:layout_centerHorizontal="true"
         android:text="Login"
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:background="@drawable/modern_button"
+        android:textColor="@android:color/white" />
 
     <EditText
         android:id="@+id/codeEdit"
-        android:layout_width="match_parent"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/loginButton"
+        android:layout_centerHorizontal="true"
         android:hint="Authentication Code"
         android:inputType="number"
         android:visibility="gone" />
 
     <Button
         android:id="@+id/codeButton"
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/codeEdit"
+        android:layout_centerHorizontal="true"
         android:text="Submit Code"
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:background="@drawable/modern_button"
+        android:textColor="@android:color/white" />
 
     <Button
         android:id="@+id/backToChatsButton"
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/codeButton"
-        android:text="Back to Chats"
-        android:visibility="gone" />
-
+        android:text="Back"
+        android:visibility="gone"
+        android:background="@drawable/modern_button"
+        android:textColor="@android:color/white" />
     <ListView
         android:id="@+id/chatListView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/backToChatsButton" />
+        android:layout_below="@id/backToChatsButton"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:background="@drawable/listview_background"
+        android:scrollbars="vertical"/>
 
     <ListView
         android:id="@+id/messagesListView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/backToChatsButton"
-        android:visibility="gone" />
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:background="@drawable/listview_background"
+        android:scrollbars="vertical"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btnDeleteMedia"
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:layout_below="@+id/backToChatsButton"
-        android:text="Delete Telegram Media"
-        android:visibility="gone" />
+        android:text="Delete Cache"
+        android:visibility="gone"
+        android:background="@drawable/modern_button"
+        android:textColor="@android:color/white" />
 
 
     <Button
         android:id="@+id/btnCancelDownload"
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_below="@+id/btnDeleteMedia"
         android:layout_marginTop="138dp"
         android:visibility="gone"
-        android:text="Cancel Download" />
-
+        android:text="Stop Download"
+        android:background="@drawable/modern_button"
+        android:textColor="@android:color/white" />
     <Button
         android:id="@+id/btnResume"
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_below="@+id/btnCancelDownload"
         android:layout_marginTop="138dp"
         android:text="Play Now"
-        android:visibility="invisible"/>
+        android:visibility="invisible"
+        android:background="@drawable/modern_button"
+        android:textColor="@android:color/white" />
 </RelativeLayout>
