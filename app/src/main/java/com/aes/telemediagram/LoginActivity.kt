@@ -11,6 +11,7 @@ import android.widget.*
 import androidx.fragment.app.FragmentActivity
 import com.aes.telemediagram.TelegramClientManager.client
 import kotlinx.coroutines.*
+import okhttp3.internal.wait
 import org.drinkless.tdlib.TdApi
 import java.io.File
 
@@ -100,6 +101,7 @@ class LoginActivity : FragmentActivity() {
     private fun loadGroups() {
         TelegramClientManager.loadAllGroups { chat ->
             runOnUiThread {
+                chatListView.visibility = View.VISIBLE
                 updateStatus("Chats")
                 chatList.add(chat.title)
                 chatIdList.add(chat.id)
@@ -125,7 +127,7 @@ class LoginActivity : FragmentActivity() {
                 messagesListView.visibility = View.VISIBLE
                 backToChatsButton.visibility = View.VISIBLE
 
-                buttonModifier()
+                //buttonModifier()
 
                 messagesListView.setOnItemClickListener { _, _, position, _ ->
                     val media = mediaMessages[position]
