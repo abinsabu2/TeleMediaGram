@@ -48,98 +48,13 @@ class LoginActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
-
-        // Initialize UI elements
-        statusText = findViewById(R.id.statusText)
-        phoneEdit = findViewById(R.id.phoneEdit)
-        codeEdit = findViewById(R.id.codeEdit)
-        loginButton = findViewById(R.id.loginButton)
-        codeButton = findViewById(R.id.codeButton)
-        chatListView = findViewById(R.id.chatListView)
-        clearMedia = findViewById(R.id.btnDeleteMedia)
-
-        cancelButton = findViewById(R.id.btnCancelDownload)
-
-        resumeButton = findViewById(R.id.btnResume)
-
-        cancelButton.setOnClickListener {
-            showToast("File Download Cancellation Initiated...")
-            TelegramClientManager.cancelDownload(activeDownloads)
-            isVLCPlaying = false
-            activeDownloads.clear()
-            stopVLCPlayback()
-            deleteTdLibMediaFolders(this@LoginActivity)
-            showToast("Download Cancelled")
-            Log.d("TDLib", "Download Stoped")
-        }
-
-        resumeButton.setOnClickListener {
-            if(currentDownload != null && currentDownload!!.downloadedSize > 300) {
-                stopVLCPlayback()
-                this.isVLCPlaying = true
-                playWithVLC(this@LoginActivity, currentDownload!!.localPath)
-
-            }else{
-                showToast("Not Enough Data to Resume Min 500 MB required...")
-            }
-        }
-
-
-
-        chatAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, chatList)
-        chatListView.adapter = chatAdapter
-
         // Initialize Telegram Client
         TelegramClientManager.initialize(::onResult)
+        // Initialize UI elements
+        initializeUiElements()
+        // Initialize ON Click Listeners
+        initializeOnClickListeners()
 
-        loginButton.setOnClickListener {
-            val phone = phoneEdit.text.toString().trim()
-            if (phone.isNotEmpty()) {
-                TelegramClientManager.sendPhoneNumber(phone, ::onResult)
-                updateStatus("Phone number sent, waiting for code...")
-                phoneEdit.visibility = View.GONE
-                loginButton.visibility = View.GONE
-            } else {
-                showToast("Enter phone number")
-            }
-        }
-
-        codeButton.setOnClickListener {
-            val code = codeEdit.text.toString().trim()
-            if (code.isNotEmpty()) {
-                TelegramClientManager.sendAuthCode(code, ::onResult)
-                updateStatus("Code sent, processing...")
-                codeEdit.visibility = View.GONE
-                codeButton.visibility = View.GONE
-            } else {
-                showToast("Enter code")
-            }
-        }
-
-
-        clearMedia.setOnClickListener {
-            deleteTdLibMediaFolders(this@LoginActivity)
-        }
-
-        chatListView.setOnItemClickListener { _, _, position, _ ->
-            clearMedia.visibility = View.VISIBLE
-            cancelButton.visibility = View.VISIBLE
-            val chatId = chatIdList[position]
-            loadMessages(chatId)
-        }
-
-        messagesListView = findViewById(R.id.messagesListView)
-        messagesAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, messagesList)
-        messagesListView.adapter = messagesAdapter
-
-        backToChatsButton = findViewById(R.id.backToChatsButton)
-        backToChatsButton.setOnClickListener {
-            clearMedia.visibility = View.GONE
-            cancelButton.visibility = View.GONE
-            messagesListView.visibility = View.GONE
-            chatListView.visibility = View.VISIBLE
-            backToChatsButton.visibility = View.GONE
-        }
     }
 
     private fun onResult(obj: TdApi.Object?) {
@@ -155,6 +70,7 @@ class LoginActivity : FragmentActivity() {
             else -> Log.d("TDLib", "Result: $obj")
         }
     }
+
 
     private fun onAuthorizationStateUpdated(state: TdApi.AuthorizationState) {
         when (state) {
@@ -209,51 +125,7 @@ class LoginActivity : FragmentActivity() {
                 messagesListView.visibility = View.VISIBLE
                 backToChatsButton.visibility = View.VISIBLE
 
-                // Get current layout parameters
-                val params = clearMedia.layoutParams as RelativeLayout.LayoutParams
-
-                // Clear any existing relative rules
-                params.addRule(RelativeLayout.BELOW, 0)
-                params.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
-                params.addRule(RelativeLayout.RIGHT_OF, 0)
-
-                // Set rule to position button2 to the right of button1
-                params.addRule(RelativeLayout.RIGHT_OF, backToChatsButton.id)
-                params.leftMargin = 16 // optional spacing between buttons (in px)
-
-                // Apply the updated parameters
-                clearMedia.layoutParams = params
-
-
-                // Get current layout parameters
-                val cancelParam = cancelButton.layoutParams as RelativeLayout.LayoutParams
-
-                // Clear any existing relative rules
-                cancelParam.addRule(RelativeLayout.BELOW, 0)
-                cancelParam.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
-                cancelParam.addRule(RelativeLayout.RIGHT_OF, 0)
-                cancelParam.addRule(RelativeLayout.RIGHT_OF, clearMedia.id)
-                cancelParam.leftMargin = 16 // optional spacing between buttons (in px)
-
-                // Apply the updated parameters
-                cancelParam.topMargin = dpToPx(20, this@LoginActivity)
-                cancelButton.layoutParams = cancelParam
-
-
-
-                val resumeParam = resumeButton.layoutParams as RelativeLayout.LayoutParams
-
-                // Clear any existing relative rules
-                resumeParam.addRule(RelativeLayout.BELOW, 0)
-                resumeParam.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
-                resumeParam.addRule(RelativeLayout.RIGHT_OF, 0)
-                resumeParam.addRule(RelativeLayout.RIGHT_OF, cancelButton.id)
-                resumeParam.leftMargin = 16 // optional spacing between buttons (in px)
-
-                // Apply the updated parameters
-                resumeParam.topMargin = dpToPx(20, this@LoginActivity)
-                resumeButton.layoutParams = resumeParam
-
+                buttonModifier()
 
                 messagesListView.setOnItemClickListener { _, _, position, _ ->
                     val media = mediaMessages[position]
@@ -319,30 +191,6 @@ class LoginActivity : FragmentActivity() {
         TelegramClientManager.close()
         scope.cancel()
     }
-
-    data class MediaMessage(
-        val isMedia: Boolean = false,
-        val description: String,
-        val localPath: String? = null,
-        val fileId: Int? = null,
-        val mimeType: String? = null,
-        val width: Int? = null,
-        val height: Int? = null,
-        val duration: Int? = null,
-        val size: Int? = null,
-        val thumbnailPath: String? = null,
-        val thumbnailMimeType: String? = null,
-        val thumbnailWidth: Int? = null,
-        val thumbnailHeight: Int? = null,
-    )
-
-    data class DownloadingFileInfo(
-        val fileId: Int,
-        val downloadedSize: Float,
-        val totalSize: Float,
-        val progress: Int,
-        var localPath: String? = null,
-    )
 
     private fun downloadAndPlayFile(fileId: Int?) {
         TelegramClientManager.cancelDownload(activeDownloads)
@@ -426,6 +274,161 @@ class LoginActivity : FragmentActivity() {
             Toast.LENGTH_SHORT
         ).show()
     }
+    private fun initializeOnClickListeners() {
 
+        loginButton.setOnClickListener {
+            val phone = phoneEdit.text.toString().trim()
+            if (phone.isNotEmpty()) {
+                TelegramClientManager.sendPhoneNumber(phone, ::onResult)
+                updateStatus("Phone number sent, waiting for code...")
+                phoneEdit.visibility = View.GONE
+                loginButton.visibility = View.GONE
+            } else {
+                showToast("Enter phone number")
+            }
+        }
+
+        codeButton.setOnClickListener {
+            val code = codeEdit.text.toString().trim()
+            if (code.isNotEmpty()) {
+                TelegramClientManager.sendAuthCode(code, ::onResult)
+                updateStatus("Code sent, processing...")
+                codeEdit.visibility = View.GONE
+                codeButton.visibility = View.GONE
+            } else {
+                showToast("Enter code")
+            }
+        }
+
+        cancelButton.setOnClickListener {
+            TelegramClientManager.cancelDownload(activeDownloads)
+            isVLCPlaying = false
+            activeDownloads.clear()
+            stopVLCPlayback()
+            deleteTdLibMediaFolders(this@LoginActivity)
+            showToast("Download Cancelled")
+            Log.d("TDLib", "Download Stoped")
+        }
+
+        resumeButton.setOnClickListener {
+            if(currentDownload != null && currentDownload!!.downloadedSize > 300) {
+                stopVLCPlayback()
+                this.isVLCPlaying = true
+                playWithVLC(this@LoginActivity, currentDownload!!.localPath)
+
+            }else{
+                showToast("Not Enough Data to Resume Min 500 MB required...")
+            }
+        }
+
+        clearMedia.setOnClickListener {
+            deleteTdLibMediaFolders(this@LoginActivity)
+        }
+
+        chatListView.setOnItemClickListener { _, _, position, _ ->
+            clearMedia.visibility = View.VISIBLE
+            cancelButton.visibility = View.VISIBLE
+            resumeButton.visibility = View.VISIBLE
+            val chatId = chatIdList[position]
+            loadMessages(chatId)
+        }
+
+        backToChatsButton.setOnClickListener {
+            clearMedia.visibility = View.GONE
+            cancelButton.visibility = View.GONE
+            messagesListView.visibility = View.GONE
+            backToChatsButton.visibility = View.GONE
+            resumeButton.visibility = View.GONE
+            chatListView.visibility = View.VISIBLE
+        }
     }
+    private fun initializeUiElements() {
+        statusText = findViewById(R.id.statusText)
+        phoneEdit = findViewById(R.id.phoneEdit)
+        codeEdit = findViewById(R.id.codeEdit)
+        loginButton = findViewById(R.id.loginButton)
+        codeButton = findViewById(R.id.codeButton)
+        chatListView = findViewById(R.id.chatListView)
+        clearMedia = findViewById(R.id.btnDeleteMedia)
+        cancelButton = findViewById(R.id.btnCancelDownload)
+        resumeButton = findViewById(R.id.btnResume)
+
+        chatAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, chatList)
+        chatListView.adapter = chatAdapter
+        messagesListView = findViewById(R.id.messagesListView)
+        messagesAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, messagesList)
+        messagesListView.adapter = messagesAdapter
+        backToChatsButton = findViewById(R.id.backToChatsButton)
+    }
+
+    private fun buttonModifier(){
+        // Get current layout parameters
+        val params = clearMedia.layoutParams as RelativeLayout.LayoutParams
+
+        // Clear any existing relative rules
+        params.addRule(RelativeLayout.BELOW, 0)
+        params.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
+        params.addRule(RelativeLayout.RIGHT_OF, 0)
+
+        // Set rule to position button2 to the right of button1
+        params.addRule(RelativeLayout.RIGHT_OF, backToChatsButton.id)
+        params.leftMargin = 16 // optional spacing between buttons (in px)
+
+        // Apply the updated parameters
+        clearMedia.layoutParams = params
+
+
+        // Get current layout parameters
+        val cancelParam = cancelButton.layoutParams as RelativeLayout.LayoutParams
+
+        // Clear any existing relative rules
+        cancelParam.addRule(RelativeLayout.BELOW, 0)
+        cancelParam.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
+        cancelParam.addRule(RelativeLayout.RIGHT_OF, 0)
+        cancelParam.addRule(RelativeLayout.RIGHT_OF, clearMedia.id)
+        cancelParam.leftMargin = 16 // optional spacing between buttons (in px)
+
+        // Apply the updated parameters
+        cancelParam.topMargin = dpToPx(20, this@LoginActivity)
+        cancelButton.layoutParams = cancelParam
+
+
+
+        val resumeParam = resumeButton.layoutParams as RelativeLayout.LayoutParams
+
+        // Clear any existing relative rules
+        resumeParam.addRule(RelativeLayout.BELOW, 0)
+        resumeParam.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0)
+        resumeParam.addRule(RelativeLayout.RIGHT_OF, 0)
+        resumeParam.addRule(RelativeLayout.RIGHT_OF, cancelButton.id)
+        resumeParam.leftMargin = 16 // optional spacing between buttons (in px)
+
+        // Apply the updated parameters
+        resumeParam.topMargin = dpToPx(20, this@LoginActivity)
+        resumeButton.layoutParams = resumeParam
+    }
+}
+data class MediaMessage(
+    val isMedia: Boolean = false,
+    val description: String,
+    val localPath: String? = null,
+    val fileId: Int? = null,
+    val mimeType: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val duration: Int? = null,
+    val size: Int? = null,
+    val thumbnailPath: String? = null,
+    val thumbnailMimeType: String? = null,
+    val thumbnailWidth: Int? = null,
+    val thumbnailHeight: Int? = null,
+)
+
+data class DownloadingFileInfo(
+    val fileId: Int,
+    val downloadedSize: Float,
+    val totalSize: Float,
+    val progress: Int,
+    var localPath: String? = null,
+)
 
