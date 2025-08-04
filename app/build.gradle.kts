@@ -9,11 +9,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.aes.telemediagramtest"
+        applicationId = "com.aes.telemediagram"
         minSdk = 21
         targetSdk = 35
         versionCode = 100
-        versionName = "1.0.100"
+        versionName = "1.0.101"
 
     }
 
